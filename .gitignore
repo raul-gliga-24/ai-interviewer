@@ -41,6 +41,11 @@ yarn-error.log*
 # vercel
 .vercel
 
+# local-only files, never committed
+AGENTS.md
+CLAUDE.md
+.prompts/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
