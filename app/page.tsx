@@ -1,10 +1,29 @@
-export default function Home() {
+import { InterviewHistory } from "@/components/interview-history";
+import { StartInterviewForm } from "@/components/start-interview-form";
+import { listInterviews } from "@/lib/storage";
+
+// The history list reads the data directory, so this page is always fresh.
+export const dynamic = "force-dynamic";
+
+export default async function Home() {
+  const interviews = await listInterviews();
+
   return (
-    <main className="mx-auto flex min-h-screen max-w-2xl flex-col justify-center gap-2 p-8">
-      <h1 className="text-2xl font-semibold tracking-tight">AI Interviewer</h1>
-      <p className="text-muted-foreground">
-        Placeholder home page — the interview setup form lands here in Milestone 2.
-      </p>
+    <main className="mx-auto w-full max-w-2xl flex-1 space-y-10 p-6 py-12">
+      <header className="space-y-2">
+        <h1 className="text-3xl font-semibold tracking-tight">AI Interviewer</h1>
+        <p className="text-muted-foreground">
+          Pick a topic and answer a few questions. Each one is written from what you
+          said before, and you get a summary of your answers at the end.
+        </p>
+      </header>
+
+      <StartInterviewForm />
+
+      <section className="space-y-3">
+        <h2 className="text-lg font-medium">Past interviews</h2>
+        <InterviewHistory interviews={interviews} />
+      </section>
     </main>
   );
 }
