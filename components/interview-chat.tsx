@@ -41,6 +41,7 @@ export function InterviewChat({
   const [phase, setPhase] = useState<Phase>("idle");
   const [sentAnswer, setSentAnswer] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [retryable, setRetryable] = useState(true);
   const bottom = useRef<HTMLDivElement>(null);
 
   const busy = phase === "sending" || phase === "closing";
@@ -66,6 +67,7 @@ export function InterviewChat({
     setDraft("");
     drafts.delete(interview.id);
     setError(null);
+    setRetryable(true);
 
     // At the cap this turn is definitely the last one. Before MIN_QUESTIONS it
     // definitely isn't, so the clock is never consulted there. In between, a
@@ -85,7 +87,12 @@ export function InterviewChat({
         body: JSON.stringify({ id: interview.id, answer: value }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Something went wrong.");
+      if (!res.ok) {
+        // 503 means this tier cannot work as configured, so a retry button
+        // would only invite the same failure.
+        setRetryable(res.status !== 503);
+        throw new Error(data.error ?? "Something went wrong.");
+      }
 
       setInterview(data);
       setSentAnswer(null);
@@ -142,14 +149,21 @@ export function InterviewChat({
             className="border-destructive/50 bg-destructive/5 space-y-3 rounded-lg border p-4"
           >
             <p className="text-sm">{error}</p>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => sentAnswer && void send(sentAnswer)}
-            >
-              <RotateCcw />
-              Try again
-            </Button>
+            {retryable ? (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => sentAnswer && void send(sentAnswer)}
+              >
+                <RotateCcw />
+                Try again
+              </Button>
+            ) : (
+              <p className="text-muted-foreground text-sm">
+                Your answers are saved. This interview can be resumed once the
+                interviewer is configured.
+              </p>
+            )}
           </div>
         )}
 

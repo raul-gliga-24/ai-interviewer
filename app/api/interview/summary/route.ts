@@ -1,5 +1,5 @@
 import { ensureAnalysis } from "@/lib/analysis";
-import { apiError, parseBody, readTrimmed } from "@/lib/http";
+import { apiError, parseBody, readTrimmed, upstreamError } from "@/lib/http";
 import { getInterview } from "@/lib/storage";
 
 /** POST /api/interview/summary — body: {id} */
@@ -22,10 +22,10 @@ export async function POST(request: Request) {
 
   try {
     return Response.json(await ensureAnalysis(interview));
-  } catch {
-    return apiError(
+  } catch (error) {
+    return upstreamError(
+      error,
       "The analysis could not be generated. Please try again.",
-      502,
     );
   }
 }

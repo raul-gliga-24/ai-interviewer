@@ -1,8 +1,13 @@
 import { ensureAnalysis } from "@/lib/analysis";
-import { apiError, parseBody, readTrimmed } from "@/lib/http";
+import { apiError, parseBody, readTrimmed, upstreamError } from "@/lib/http";
 import { completeJSON } from "@/lib/llm";
 import { nextQuestionPrompt } from "@/lib/prompts";
-import { readQuestion, shouldFinish, type NextQuestion } from "@/lib/question";
+import {
+  atQuestionCap,
+  readQuestion,
+  shouldFinish,
+  type NextQuestion,
+} from "@/lib/question";
 import { getInterview, saveInterview, type Interview } from "@/lib/storage";
 
 const ANSWER_MAX = 4000;
@@ -43,6 +48,13 @@ export async function POST(request: Request) {
   // last time. Keep the stored answer and just retry the question generation,
   // which makes retrying the same request safe.
 
+  // At the cap the interview is over whatever the model says, so asking it
+  // would cost a call and a second and a half on the slowest request in the
+  // app — the one that also has to write the analysis.
+  if (atQuestionCap(interview.transcript.length)) {
+    return Response.json(await complete(interview));
+  }
+
   let next: NextQuestion;
   try {
     next = await completeJSON<NextQuestion>(
@@ -50,10 +62,10 @@ export async function POST(request: Request) {
       nextQuestionPrompt(interview.topic, interview.transcript),
       { maxTokens: 300 },
     );
-  } catch {
-    return apiError(
+  } catch (error) {
+    return upstreamError(
+      error,
       "The interviewer could not be reached. Your answer was saved — please retry.",
-      502,
     );
   }
 

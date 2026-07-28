@@ -1,4 +1,4 @@
-import { apiError, parseBody, readTrimmed } from "@/lib/http";
+import { apiError, parseBody, readTrimmed, upstreamError } from "@/lib/http";
 import { completeJSON } from "@/lib/llm";
 import { nextQuestionPrompt } from "@/lib/prompts";
 import { createInterview, saveInterview } from "@/lib/storage";
@@ -35,10 +35,10 @@ export async function POST(request: Request) {
       nextQuestionPrompt(topic, []),
       { maxTokens: 300 },
     );
-  } catch {
-    return apiError(
+  } catch (error) {
+    return upstreamError(
+      error,
       "The interviewer could not be reached. Please try again.",
-      502,
     );
   }
 

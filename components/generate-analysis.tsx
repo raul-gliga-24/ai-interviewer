@@ -16,6 +16,7 @@ import type { Analysis } from "@/lib/prompts";
 export function GenerateAnalysis({ id }: { id: string }) {
   const [analysis, setAnalysis] = useState<Analysis | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [retryable, setRetryable] = useState(true);
   const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
@@ -30,7 +31,11 @@ export function GenerateAnalysis({ id }: { id: string }) {
         });
         const data = await res.json();
         if (cancelled) return;
-        if (!res.ok) throw new Error(data.error ?? "Could not write the summary.");
+        if (!res.ok) {
+          // 503 means the tier cannot work as configured — retrying is futile.
+          setRetryable(res.status !== 503);
+          throw new Error(data.error ?? "Could not write the summary.");
+        }
         setAnalysis(data.analysis);
       } catch (err) {
         if (cancelled) return;
@@ -57,17 +62,19 @@ export function GenerateAnalysis({ id }: { id: string }) {
           is complete.
         </p>
         <p className="text-sm">{error}</p>
-        <Button
-          size="sm"
-          variant="outline"
-          onClick={() => {
-            setError(null);
-            setAttempt((n) => n + 1);
-          }}
-        >
-          <RotateCcw />
-          Try again
-        </Button>
+        {retryable && (
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => {
+              setError(null);
+              setAttempt((n) => n + 1);
+            }}
+          >
+            <RotateCcw />
+            Try again
+          </Button>
+        )}
       </div>
     );
   }

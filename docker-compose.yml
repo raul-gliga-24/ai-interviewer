@@ -1,0 +1,17 @@
+services:
+  app:
+    build: .
+    ports:
+      - "3000:3000"
+    # Listed without values, so each one is taken from the shell if it is set
+    # there and left alone otherwise — assigning a default here would override
+    # env_file below with an empty string.
+    environment:
+      - ANTHROPIC_API_KEY
+      - DEEPSEEK_API_KEY
+    env_file:
+      - path: .env.local
+        required: false
+    volumes:
+      # Interviews survive rebuilds and restarts.
+      - ./data:/app/data
