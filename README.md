@@ -23,28 +23,34 @@ whole transcript plus the analysis is written to disk as JSON.
 Requires Node 20.9 or newer.
 
 ```bash
-npm install
-cp .env.example .env.local     # then add at least one API key
+npm ci                         # npm install also works; ci matches the lockfile exactly
+cp .env.example .env.local     # then fill in at least one key
 npm run dev
 ```
 
 The app runs at http://localhost:3000.
 
-`.env.local` holds the keys and is never committed:
+`.env.local` holds the keys and is never committed. Fill in the ones you have
+and leave the rest empty:
 
 ```
-ANTHROPIC_API_KEY=sk-ant-...
+ANTHROPIC_API_KEY=
 DEEPSEEK_API_KEY=sk-...
 ```
 
-Only one key is needed. A tier without a key is shown as unavailable rather
-than failing when you try to use it.
+Only one key is needed. A tier whose key is empty is shown as unavailable in
+the UI rather than failing when you try to use it — so leave it empty rather
+than filling in a placeholder.
 
 ## Run with Docker
 
 ```bash
 docker compose up --build
 ```
+
+Needs Docker Compose v2 (the `docker compose` subcommand, not `docker-compose`).
+The first build installs dependencies and compiles from scratch, so expect a
+few minutes; later builds reuse the cached layers.
 
 Also at http://localhost:3000. Keys are read from `.env.local` at run time —
 the same file the dev server uses, and nothing secret is copied into the image.
