@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 
 import { InterviewChat } from "@/components/interview-chat";
-import { MAX_QUESTIONS } from "@/lib/prompts";
+import { MAX_QUESTIONS, MIN_QUESTIONS } from "@/lib/prompts";
 import { getInterview } from "@/lib/storage";
 
 export const metadata: Metadata = { title: "Interview · AI Interviewer" };
@@ -21,7 +21,7 @@ export default async function InterviewPage({
   if (interview.status === "completed") redirect(`/results/${id}`);
 
   // Two things worth noting here:
-  // - MAX_QUESTIONS is passed down rather than imported by the client
+  // - the question bounds are passed down rather than imported by the client
   //   component, because lib/prompts reaches lib/llm and would drag both
   //   vendor SDKs into the browser bundle.
   // - the key remounts the chat whenever the stored interview has moved on
@@ -31,6 +31,7 @@ export default async function InterviewPage({
     <InterviewChat
       key={`${interview.transcript.length}-${interview.status}`}
       interview={interview}
+      minQuestions={MIN_QUESTIONS}
       maxQuestions={MAX_QUESTIONS}
     />
   );

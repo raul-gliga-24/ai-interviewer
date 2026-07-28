@@ -14,23 +14,30 @@ import type { Interview } from "@/lib/storage";
 /**
  * A normal turn takes a second or two; the turn that ends the interview also
  * writes the summary and takes several. We can't know in advance which one we
- * are on unless the cap has been reached, so a turn that outlives a normal one
- * is treated as the closing turn and says so.
+ * are on unless the cap has been reached, so a slow turn is taken to be the
+ * closing one — but only once ending is possible at all. Below MIN_QUESTIONS
+ * the interview cannot end, so a slow turn there is just a slow turn, and the
+ * threshold itself is only calibrated against one provider.
  */
 const CLOSING_TURN_AFTER_MS = 2500;
+
+/** Drafts survive a remount (see the key on this component) but not a reload. */
+const drafts = new Map<string, string>();
 
 type Phase = "idle" | "sending" | "closing" | "failed";
 
 export function InterviewChat({
   interview: initial,
+  minQuestions,
   maxQuestions,
 }: {
   interview: Interview;
+  minQuestions: number;
   maxQuestions: number;
 }) {
   const router = useRouter();
   const [interview, setInterview] = useState(initial);
-  const [draft, setDraft] = useState("");
+  const [draft, setDraft] = useState(() => drafts.get(initial.id) ?? "");
   const [phase, setPhase] = useState<Phase>("idle");
   const [sentAnswer, setSentAnswer] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -57,15 +64,19 @@ export function InterviewChat({
 
     setSentAnswer(value);
     setDraft("");
+    drafts.delete(interview.id);
     setError(null);
 
-    // At the cap this turn is definitely the last one; otherwise let the clock
-    // tell us — see CLOSING_TURN_AFTER_MS.
+    // At the cap this turn is definitely the last one. Before MIN_QUESTIONS it
+    // definitely isn't, so the clock is never consulted there. In between, a
+    // turn that outlives a normal one is treated as the closing turn.
     const lastForCertain = asked >= maxQuestions;
+    const couldBeLast = asked >= minQuestions;
     setPhase(lastForCertain ? "closing" : "sending");
-    const timer = lastForCertain
-      ? undefined
-      : setTimeout(() => setPhase("closing"), CLOSING_TURN_AFTER_MS);
+    const timer =
+      lastForCertain || !couldBeLast
+        ? undefined
+        : setTimeout(() => setPhase("closing"), CLOSING_TURN_AFTER_MS);
 
     try {
       const res = await fetch("/api/interview/answer", {
@@ -148,7 +159,10 @@ export function InterviewChat({
       <div className="bg-background sticky bottom-0 space-y-2 pt-6 pb-4">
         <Textarea
           value={draft}
-          onChange={(event) => setDraft(event.target.value)}
+          onChange={(event) => {
+            setDraft(event.target.value);
+            drafts.set(interview.id, event.target.value);
+          }}
           onKeyDown={(event) => {
             if (event.key === "Enter" && !event.shiftKey) {
               event.preventDefault();
