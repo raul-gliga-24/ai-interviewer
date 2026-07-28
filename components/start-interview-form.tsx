@@ -19,15 +19,21 @@ const PRESETS = [
   "Open source",
 ];
 
-export function StartInterviewForm() {
+export function StartInterviewForm({
+  available,
+}: {
+  available: Record<Tier, boolean>;
+}) {
   const router = useRouter();
   const [topic, setTopic] = useState("");
-  const [tier, setTier] = useState<Tier>("fast");
+  const [tier, setTier] = useState<Tier>(available.fast ? "fast" : "smart");
   const [starting, setStarting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const trimmed = topic.trim();
-  const canStart = trimmed.length >= 3 && !starting;
+  const anyAvailable = TIERS.some((option) => available[option.value]);
+  const unavailable = TIERS.filter((option) => !available[option.value]);
+  const canStart = trimmed.length >= 3 && !starting && available[tier];
   const activeTier = TIERS.find((option) => option.value === tier);
 
   async function start() {
@@ -99,12 +105,31 @@ export function StartInterviewForm() {
           className="justify-start"
         >
           {TIERS.map((option) => (
-            <ToggleGroupItem key={option.value} value={option.value} className="px-4">
+            <ToggleGroupItem
+              key={option.value}
+              value={option.value}
+              className="px-4"
+              disabled={!available[option.value]}
+            >
               {option.label}
             </ToggleGroupItem>
           ))}
         </ToggleGroup>
         <p className="text-muted-foreground text-sm">{activeTier?.hint}</p>
+        {anyAvailable
+          ? unavailable.length > 0 && (
+              <p className="text-muted-foreground text-sm">
+                {unavailable.map((option) => option.label).join(" and ")}{" "}
+                {unavailable.length === 1 ? "is" : "are"} unavailable — no API key
+                configured.
+              </p>
+            )
+          : (
+              <p role="alert" className="text-destructive text-sm">
+                Neither interviewer is configured. Add an API key to .env.local and
+                restart the server.
+              </p>
+            )}
       </div>
 
       <div className="space-y-3">

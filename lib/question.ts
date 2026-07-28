@@ -36,6 +36,15 @@ function readField(next: unknown, key: "question" | "unexplored"): string {
 }
 
 /**
+ * Whether the cap alone decides the outcome. Worth asking before calling the
+ * model: at the cap the interview ends no matter what comes back, so there is
+ * nothing for the answer to change.
+ */
+export function atQuestionCap(asked: number): boolean {
+  return asked >= MAX_QUESTIONS;
+}
+
+/**
  * Whether the interview should end now, given how many questions have already
  * been asked and answered.
  *

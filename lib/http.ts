@@ -1,9 +1,27 @@
 // Shared helpers so every API route speaks the same dialect:
 // success -> the interview as JSON, failure -> {error: string} with a status.
 
+import { isTierUnavailable } from "./upstream";
+
 /** Standard error response. Every non-2xx reply in the app has this shape. */
 export function apiError(message: string, status: number): Response {
   return Response.json({ error: message }, { status });
+}
+
+/**
+ * A failed model call, answered honestly: 503 when this tier cannot work as
+ * configured (no key, unpaid account, rejected credentials) and 502 when it
+ * looks like a blip worth retrying. The client uses the status to decide
+ * whether offering a retry button is helpful or a lie.
+ */
+export function upstreamError(error: unknown, transientMessage: string): Response {
+  if (isTierUnavailable(error)) {
+    return apiError(
+      "This interviewer is unavailable — its API key is missing or its account cannot be billed. Try the other one.",
+      503,
+    );
+  }
+  return apiError(transientMessage, 502);
 }
 
 /**

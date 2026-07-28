@@ -1,6 +1,7 @@
 import { InterviewHistory } from "@/components/interview-history";
 import { StartInterviewForm } from "@/components/start-interview-form";
 import { listInterviews } from "@/lib/storage";
+import { configuredTiers } from "@/lib/upstream";
 
 // The history list reads the data directory, so this page is always fresh.
 export const dynamic = "force-dynamic";
@@ -18,7 +19,7 @@ export default async function Home() {
         </p>
       </header>
 
-      <StartInterviewForm />
+      <StartInterviewForm available={configuredTiers()} />
 
       <section className="space-y-3">
         <h2 className="text-lg font-medium">Past interviews</h2>
