@@ -162,31 +162,6 @@ the model is not consulted at all, since nothing it could say would change the
 outcome — that saves a call and about 1.3 seconds on the slowest request in the
 app, which is the same one that has to write the analysis.
 
-### The provider abstraction
-
-Everything outside `lib/llm` depends on an `LLMProvider` interface —
-`complete(messages)` — and never on a vendor SDK. Two things fall out of that.
-Offering a quality/cost choice in the UI is a one-line factory call rather than
-a branch through the codebase, and the tier stored on an interview is enough to
-resume it later with the same provider. It also keeps the SDKs on the server:
-client components import types with `import type`, so the imports are erased at
-compile time, and the built bundle was checked for vendor hostnames and key
-names to confirm it.
-
-### Retrying malformed JSON
-
-Every model call in the app asks for JSON. `completeJSON` strips markdown
-fences, falls back to extracting the first `{...}` block from surrounding prose,
-and if it still cannot parse, sends the reply back with a corrective message and
-tries once more before giving up.
-
-In practice DeepSeek never needed it: across roughly a hundred calls during
-development, every reply parsed on the first attempt. The logic stays because
-"has not happened yet" is not the same as "cannot happen", and a single malformed
-reply would otherwise end an interview the user is halfway through. It is covered
-by unit tests that feed it deliberately malformed strings, so there is evidence
-it works rather than only evidence it was never needed.
-
 ### Storage is written every turn
 
 Interviews are plain JSON files, one per interview, rewritten after every turn.
